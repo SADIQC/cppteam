@@ -1,0 +1,210 @@
+// ThrdPoolExmpl.cpp : main project file.
+
+#include "stdafx.h"
+#include <queue>
+#include <windows.h>
+#include <strsafe.h>
+#include <ctime>
+#include <sstream>
+#include <string>
+
+using namespace System;
+using namespace System::Threading;
+using namespace System::Collections::Generic;
+
+ 
+
+class SubscriberInfo
+{
+public:
+	String ItemID = new String();
+	String MerchantID = new String();
+	String MarketplaceID = new String();
+	String DataType = new String();
+};
+
+
+ref class ThreadExample
+{
+
+private :
+	ThreadExample() {}
+	Queue<SubscriberInfo> Qlow = new Queue<SubscriberInfo>();
+	 
+	Queue<SubscriberInfo> Qlowest = new Queue<SubscriberInfo>();
+	Queue<SubscriberInfo> Qnormal = new Queue<SubscriberInfo>();
+	Queue<SubscriberInfo> Qhigh = new Queue<SubscriberInfo>();
+	Queue<SubscriberInfo> Qhighest = new Queue<SubscriberInfo>();
+	
+public:
+	
+	static void ThreadProc1(Object^ stateInfo)
+	{
+		//Process queue of batch here
+		Console::WriteLine("I am finish from the thread pool 1.");
+		dynamic_cast<AutoResetEvent^>(stateInfo)->Set();
+	}
+
+
+	static void ThreadProc2(Object^ stateInfo)
+	{
+		//Process queue of batch here
+		Console::WriteLine("I am finish from the thread pool 2.");
+		dynamic_cast<AutoResetEvent^>(stateInfo)->Set();
+	}
+
+	static void ThreadProc3(Object^ stateInfo)
+	{
+		//Process queue of batch here
+		Console::WriteLine("I am finish from the thread pool 3.");
+		dynamic_cast<AutoResetEvent^>(stateInfo)->Set();
+	}
+
+	static void ThreadProc4(Object^ stateInfo)
+	{
+		//Process queue of batch here
+		Console::WriteLine("I am finish from the thread pool 4.");
+		dynamic_cast<AutoResetEvent^>(stateInfo)->Set();
+	}
+
+	static void ThreadProc5(Object^ stateInfo)
+	{
+		//Process queue of batch here
+		Console::WriteLine("I am finish from the thread pool 5.");
+		dynamic_cast<AutoResetEvent^>(stateInfo)->Set();
+	}
+};
+
+
+
+
+int method()
+{
+
+	//Console::WriteLine"-----> Upstream Reader process has started" << endl << endl;
+
+	while (true)
+
+	{
+		//Console::WriteLine"-----> Upstream Reader process is running " << DisplayCurrentTime() << endl << endl;
+
+		WIN32_FIND_DATA ffd;
+		LARGE_INTEGER filesize;
+		TCHAR szDir[MAX_PATH];
+		HANDLE hFind;
+		DWORD dwError = 0;
+		hFind = INVALID_HANDLE_VALUE;
+		char temp[1024], NewPath[1024];
+
+		//string directory("C:\\Users\\navin\\Desktop\\Hackathon\\dump\\");
+		string directory = (char*)argv[1];
+		//strcpy(NewPath,(char*)argv[2]);
+
+
+		hFind = FindFirstFile((directory + "/*.txt").c_str(), &ffd);
+
+		if (INVALID_HANDLE_VALUE != hFind)
+		{
+			// List all the files in the directory with some info about them.
+			Console::WriteLine"-----> Upstream Reader Process Started Processing Text File(s)  " << DisplayCurrentTime() << endl << endl;
+
+
+			do
+			{
+				strcpy(NewPath, (char*)argv[2]);
+
+				if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+				{
+					//cout <<ffd.cFileName<<endl;
+				}
+				else
+				{
+					filesize.LowPart = ffd.nFileSizeLow;
+					filesize.HighPart = ffd.nFileSizeHigh;
+					//Console::WriteLineffd.cFileName<<" "<< filesize.QuadPart<<endl;
+
+					// process text files and dump to another folder
+
+					strcpy(temp, directory.c_str());
+					strcat(temp, ffd.cFileName);
+
+					ProcessTextFiles(temp);
+				}
+
+
+				strcat(NewPath, ffd.cFileName);
+				MoveFile(temp, NewPath);
+
+				//strcpy(NewPath,"C:\\Users\\navin\\Desktop\\Hackathon\\complete\\");
+			} while (FindNextFile(hFind, &ffd) != 0);
+
+			dwError = GetLastError();
+
+			if (dwError != ERROR_NO_MORE_FILES)
+				return -1;
+
+
+			FindClose(hFind);
+			Console::WriteLine"-----> Upstream Reader Process Completed Processing Text File(s)  " << DisplayCurrentTime() << endl << endl;
+		}
+
+
+	}
+	return 0;
+}
+
+
+
+
+
+int main(array<System::String ^> ^args)
+{
+	AutoResetEvent^ autoEvent = gcnew AutoResetEvent(false);
+
+    Console::WriteLine(L"Start Main Thread ");
+	// 5 worker and 5 async I/0 to print console message
+	ThreadPool::SetMaxThreads(5, 5);
+
+	// Do until information present in one of the queue
+	for (int count = 1; count < 2; count++)
+	{
+				
+		ThreadPool::QueueUserWorkItem(gcnew WaitCallback(&ThreadExample::ThreadProc1), autoEvent);
+
+		//acquire user lock and wiat to complete first queue
+		// when signalled start  processing of next queue
+		autoEvent->WaitOne();
+
+		ThreadPool::QueueUserWorkItem(gcnew WaitCallback(&ThreadExample::ThreadProc2), autoEvent);
+		//acquire user lock and wiat to complete first queue
+		// when signalled start  processing of next queue
+		autoEvent->WaitOne();
+
+		ThreadPool::QueueUserWorkItem(gcnew WaitCallback(&ThreadExample::ThreadProc3), autoEvent);
+		//acquire user lock and wiat to complete first queue
+		// when signalled start  processing of next queue
+		autoEvent->WaitOne();
+
+		ThreadPool::QueueUserWorkItem(gcnew WaitCallback(&ThreadExample::ThreadProc4), autoEvent);
+
+		//acquire user lock and wiat to complete first queue
+		// when signalled start  processing of next queue
+		autoEvent->WaitOne();
+
+		ThreadPool::QueueUserWorkItem(gcnew WaitCallback(&ThreadExample::ThreadProc5), autoEvent);
+
+		//acquire user lock and wiat to complete first queue
+		// when signalled start  processing of next queue
+		autoEvent->WaitOne();
+
+		Console::WriteLine("Main thread finish Iteration {0}.", count);
+
+	}
+
+
+	Console::WriteLine("Main thread does some work, then sleeps.");
+
+	Console::WriteLine("Main thread exits.");
+
+    return 0;
+}
